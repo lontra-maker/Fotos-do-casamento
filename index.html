@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fotos do Casamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --navy: #3f74ab;
+    --navy-soft: #6a9bc9;
+    --gold: #b8964f;
+    --gold-light: #f0e2bf;
+    --ivory: #faf7f0;
+    --line: #e3ddce;
+    --text: #21283a;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    background: var(--ivory);
+    color: var(--text);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height: 56vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 6rem 1.5rem 3.5rem;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(240,226,191,0.25), transparent 60%),
+      linear-gradient(180deg, var(--navy), var(--navy-soft));
+    color: var(--ivory);
+    position: relative;
+  }
+
+  .hero::after{
+    content:"";
+    position:absolute;
+    bottom: 0; left:50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 3.5rem;
+    background: linear-gradient(var(--gold), transparent);
+  }
+
+  .hero .eyebrow-orn{
+    font-size: 1.6rem;
+    color: var(--gold-light);
+    margin-bottom: 1.2rem;
+    letter-spacing: 0.3em;
+  }
+
+  .hero h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight: 500;
+    font-size: clamp(2.6rem, 6vw, 4.6rem);
+    margin: 0;
+    line-height: 1.05;
+  }
+
+  .hero h1 .heart{
+    color: var(--gold-light);
+    font-size: 0.6em;
+    vertical-align: middle;
+    margin: 0 0.15em;
+    position: relative;
+    top: -0.05em;
+  }
+
+  .hero .data{
+    margin-top: 1.4rem;
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+  }
+
+  .hero p.sub{
+    margin-top: 1.6rem;
+    max-width: 34ch;
+    font-size: 1rem;
+    line-height: 1.7;
+    color: #cfd6e6;
+  }
+
+  /* ---------- TOOLBAR ---------- */
+  .toolbar{
+    max-width: 1100px;
+    margin: 2rem auto 0;
+    padding: 0 1.5rem;
+    position: relative;
+    z-index: 2;
+    display:flex;
+    justify-content:center;
+  }
+
+  .toolbar-inner{
+    background: #fff;
+    border: 1px solid var(--line);
+    box-shadow: 0 10px 30px rgba(22,35,63,0.08);
+    padding: 1rem 1.6rem;
+    display:flex;
+    gap: 1rem;
+    align-items:center;
+    flex-wrap: wrap;
+    justify-content:center;
+  }
+
+  .count{
+    font-size: 0.85rem;
+    color: #6b7280;
+    letter-spacing: 0.03em;
+  }
+
+  button.primary{
+    font-family:'Jost', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    padding: 0.7rem 1.4rem;
+    border: 1px solid var(--navy);
+    background: var(--navy);
+    color: var(--ivory);
+    cursor:pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  button.primary:hover{ background: var(--gold); border-color: var(--gold); color: var(--navy); }
+  button.primary:disabled{ opacity:0.5; cursor:default; }
+
+  /* ---------- GALLERY ---------- */
+  .gallery-wrap{
+    max-width: 1200px;
+    margin: 3rem auto 5rem;
+    padding: 0 1.5rem;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 1.1rem;
+  }
+
+  .card{
+    position:relative;
+    aspect-ratio: 4/5;
+    overflow:hidden;
+    cursor: pointer;
+    background: #eee;
+    border: 1px solid var(--line);
+  }
+
+  .card img{
+    width:100%;
+    height:100%;
+    object-fit: cover;
+    display:block;
+    transition: transform 0.5s ease;
+  }
+  .card:hover img{ transform: scale(1.05); }
+
+  .card .frame{
+    position:absolute;
+    inset: 8px;
+    border: 1px solid rgba(250,247,240,0.55);
+    pointer-events:none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .card:hover .frame{ opacity: 1; }
+
+  .empty-state{
+    text-align:center;
+    padding: 4rem 1rem;
+    color: #6b7280;
+    font-size: 0.95rem;
+    line-height: 1.8;
+  }
+  .empty-state code{
+    background:#efe9db;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  /* ---------- LIGHTBOX ---------- */
+  .lightbox{
+    position: fixed;
+    inset:0;
+    background: rgba(22,26,38,0.92);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index: 50;
+    padding: 2rem;
+  }
+  .lightbox.open{ display:flex; }
+
+  .lightbox img{
+    max-width: 90vw;
+    max-height: 80vh;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .lightbox .lb-close,
+  .lightbox .lb-prev,
+  .lightbox .lb-next,
+  .lightbox .lb-download{
+    position:absolute;
+    background: transparent;
+    border: 1px solid rgba(250,247,240,0.4);
+    color: var(--ivory);
+    font-family:'Jost', sans-serif;
+    cursor:pointer;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    padding: 0.55rem 1rem;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .lightbox .lb-close:hover,
+  .lightbox .lb-prev:hover,
+  .lightbox .lb-next:hover,
+  .lightbox .lb-download:hover{ border-color: var(--gold); color: var(--gold-light); }
+
+  .lb-close{ top: 1.5rem; right: 1.5rem; }
+  .lb-download{ bottom: 1.5rem; right: 1.5rem; }
+  .lb-prev{ left: 1.5rem; top: 50%; transform: translateY(-50%); }
+  .lb-next{ right: 1.5rem; top: 50%; transform: translateY(-50%); }
+
+  @media (max-width: 640px){
+    .lb-prev, .lb-next{ padding: 0.5rem 0.7rem; }
+    .lb-close, .lb-download{ padding: 0.5rem 0.8rem; font-size: 0.75rem; }
+  }
+
+  footer{
+    text-align:center;
+    padding: 2.5rem 1rem 3rem;
+    font-size: 0.8rem;
+    color: #9a9587;
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- AGRADECIMENTO ---------- */
+  .thanks{
+    max-width: 640px;
+    margin: 3rem auto 0;
+    padding: 0 1.5rem;
+    text-align:center;
+  }
+  .thanks p{
+    font-size: 1.05rem;
+    line-height: 1.9;
+    color: #454b5c;
+  }
+  .thanks p.placeholder{
+    font-style: italic;
+    color: #9a9587;
+  }
+  .thanks .divider{
+    width: 46px;
+    height: 1px;
+    background: var(--gold);
+    margin: 1.6rem auto;
+  }
+
+  /* ---------- SELEÇÃO ---------- */
+  .toolbar-inner{
+    row-gap: 0.7rem;
+  }
+  button.ghost{
+    font-family:'Jost', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.06em;
+    padding: 0.68rem 1.3rem;
+    border: 1px solid var(--navy);
+    background: transparent;
+    color: var(--navy);
+    cursor:pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  button.ghost:hover{ background: var(--navy); color: #fff; }
+
+  .card .check{
+    position:absolute;
+    top: 10px;
+    left: 10px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(22,26,38,0.45);
+    border: 1.5px solid rgba(255,255,255,0.85);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index: 2;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .card .check svg{
+    width: 13px; height: 13px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .card.selected .check{
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+  .card.selected .check svg{ opacity: 1; }
+  .card.selected::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    border: 3px solid var(--gold);
+    pointer-events:none;
+  }
+
+  .lb-select{
+    position:absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="eyebrow-orn">✦</div>
+  <h1>Hendreo <span class="heart">♥</span> Jennifer</h1>
+  <div class="data">06 · 09 · 2026</div>
+  <p class="sub">Um dia para guardar, celebrado ao lado de quem a gente mais ama.</p>
+</section>
+
+<div class="thanks">
+  <p>Queridos amigos e familiares, a presença de vocês no nosso casamento deixou nosso dia ainda mais especial! Compartilhar o início dessa nova fase com as pessoas que mais amamos fez toda a diferença. Obrigado por celebrarem esse amor, por cada sorriso e pelo carinho que nos enviaram. Vocês tornaram nossa festa inesquecível!</p>
+  <p>Com todo o nosso amor e gratidão,<br>Hendreo e Jennifer</p>
+  <div class="divider"></div>
+  <button class="primary" id="verFotosBtn">Ver fotos</button>
+</div>
+
+<section id="fotosSection" style="display:none;">
+  <div class="thanks">
+    <p>Aqui estão os registros da celebração. Clique em qualquer foto para ampliar, marque as suas favoritas com o toque no canto da imagem ou baixe tudo de uma vez.</p>
+  </div>
+
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <span class="count" id="count">0 fotos</span>
+      <span class="count" id="selectedCount"></span>
+      <button class="ghost" id="selectAllBtn">Selecionar todas</button>
+      <button class="ghost" id="downloadSelectedBtn" disabled>Baixar selecionadas</button>
+      <button class="primary" id="downloadAllBtn">Baixar todas as fotos</button>
+    </div>
+  </div>
+
+  <div class="gallery-wrap">
+    <div class="grid" id="grid"></div>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      Nenhuma foto encontrada ainda.<br>
+      Confira se a pasta <code>fotos</code> já foi enviada pro repositório e se o nome do usuário/repositório no início do código está certo.
+    </div>
+  </div>
+</section>
+
+
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose">Fechar ✕</button>
+  <button class="lb-select ghost" id="lbSelect" style="color:#faf7f0;border-color:rgba(250,247,240,0.4);">Selecionar</button>
+  <button class="lb-prev" id="lbPrev">‹</button>
+  <img id="lbImg" src="" alt="">
+  <button class="lb-next" id="lbNext">›</button>
+  <a class="lb-download" id="lbDownload" download>Baixar esta foto</a>
+</div>
+
+<footer>feito com carinho para guardar os momentos deste dia</footer>
+
+<script>
+  /* ============================================================
+     CONFIGURAÇÃO
+     Preencha com os dados do SEU repositório no GitHub. A página
+     vai perguntar direto pro GitHub quais fotos existem na pasta
+     "fotos" — você não precisa listar nada na mão, só subir os
+     arquivos com o nome que eles já têm.
+     ============================================================ */
+  const REPO_OWNER  = "lontra-maker";     // usuário/organização do GitHub
+  const REPO_NAME   = "Fotos-do-casamento"; // nome do repositório
+  const REPO_BRANCH = "main";             // nome da branch (geralmente "main")
+  const FOLDER_NAME = "fotos";            // pasta onde as fotos ficam
+
+  const EXTENSOES_VALIDAS = ['jpg','jpeg','png','gif','webp','heic','bmp'];
+
+  let PHOTOS = [];        // nomes dos arquivos (preenchido automaticamente)
+  let PHOTO_URLS = [];    // link direto de cada foto (preenchido automaticamente)
+
+  const grid = document.getElementById('grid');
+  const countEl = document.getElementById('count');
+  const selectedCountEl = document.getElementById('selectedCount');
+  const emptyState = document.getElementById('emptyState');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+  const downloadSelectedBtn = document.getElementById('downloadSelectedBtn');
+  const selectAllBtn = document.getElementById('selectAllBtn');
+
+  const lightbox = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lbImg');
+  const lbClose = document.getElementById('lbClose');
+  const lbPrev = document.getElementById('lbPrev');
+  const lbNext = document.getElementById('lbNext');
+  const lbDownload = document.getElementById('lbDownload');
+  const lbSelect = document.getElementById('lbSelect');
+
+  let currentIndex = 0;
+  const selected = new Set();
+  const CHECK_ICON = '<svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 8.5L6.2 12L13 4" stroke="#16233f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function paths(){ return PHOTO_URLS; }
+
+  async function carregarFotosDoGitHub(){
+    const api = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER_NAME}?ref=${REPO_BRANCH}`;
+    try{
+      const res = await fetch(api);
+      if(!res.ok) throw new Error('Não foi possível ler a pasta de fotos.');
+      const dados = await res.json();
+      const arquivos = dados
+        .filter(item => item.type === 'file' && EXTENSOES_VALIDAS.includes((item.name.split('.').pop() || '').toLowerCase()))
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR', { numeric: true }));
+
+      PHOTOS = arquivos.map(f => f.name);
+      PHOTO_URLS = arquivos.map(f => f.download_url);
+    }catch(err){
+      console.error('Falha ao carregar fotos do GitHub:', err);
+      PHOTOS = [];
+      PHOTO_URLS = [];
+    }
+    renderGallery();
+    updateSelectionUI();
+  }
+
+  function renderGallery(){
+    grid.innerHTML = '';
+    if(PHOTOS.length === 0){
+      emptyState.style.display = 'block';
+      downloadAllBtn.disabled = true;
+      selectAllBtn.disabled = true;
+      countEl.textContent = '0 fotos';
+      return;
+    }
+    emptyState.style.display = 'none';
+    downloadAllBtn.disabled = false;
+    selectAllBtn.disabled = false;
+    countEl.textContent = PHOTOS.length + (PHOTOS.length === 1 ? ' foto' : ' fotos');
+    paths().forEach((src, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.index = i;
+      card.innerHTML = `
+        <img src="${src}" alt="Foto ${i+1}" loading="lazy">
+        <div class="check">${CHECK_ICON}</div>
+        <div class="frame"></div>`;
+      card.querySelector('.check').addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSelect(i);
+      });
+      card.querySelector('img').addEventListener('click', () => openLightbox(i));
+      grid.appendChild(card);
+    });
+  }
+
+  function toggleSelect(i){
+    if(selected.has(i)) selected.delete(i); else selected.add(i);
+    const card = grid.querySelector(`.card[data-index="${i}"]`);
+    if(card) card.classList.toggle('selected', selected.has(i));
+    updateSelectionUI();
+  }
+
+  function updateSelectionUI(){
+    const n = selected.size;
+    selectedCountEl.textContent = n > 0 ? `${n} selecionada${n > 1 ? 's' : ''}` : '';
+    downloadSelectedBtn.disabled = n === 0;
+    selectAllBtn.textContent = (n === PHOTOS.length && n > 0) ? 'Limpar seleção' : 'Selecionar todas';
+    if(lightbox.classList.contains('open')) updateLightboxSelectLabel();
+  }
+
+  selectAllBtn.addEventListener('click', () => {
+    if(selected.size === PHOTOS.length){
+      selected.clear();
+    }else{
+      PHOTOS.forEach((_, i) => selected.add(i));
+    }
+    grid.querySelectorAll('.card').forEach((card) => {
+      const i = Number(card.dataset.index);
+      card.classList.toggle('selected', selected.has(i));
+    });
+    updateSelectionUI();
+  });
+
+  async function downloadSet(indices, zipName){
+    const zip = new JSZip();
+    const folder = zip.folder(zipName.replace('.zip',''));
+    await Promise.all(indices.map(async (i) => {
+      const res = await fetch(paths()[i]);
+      const blob = await res.blob();
+      folder.file(PHOTOS[i], blob);
+    }));
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = zipName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  downloadSelectedBtn.addEventListener('click', async () => {
+    if(selected.size === 0) return;
+    const originalText = downloadSelectedBtn.textContent;
+    downloadSelectedBtn.disabled = true;
+    downloadSelectedBtn.textContent = 'Preparando o zip...';
+    try{
+      await downloadSet([...selected].sort((a,b)=>a-b), 'fotos-selecionadas.zip');
+    }catch(err){
+      alert('Não foi possível gerar o zip das fotos selecionadas.');
+      console.error(err);
+    }finally{
+      downloadSelectedBtn.disabled = selected.size === 0;
+      downloadSelectedBtn.textContent = originalText;
+    }
+  });
+
+  downloadAllBtn.addEventListener('click', async () => {
+    if(PHOTOS.length === 0) return;
+    downloadAllBtn.disabled = true;
+    const originalText = downloadAllBtn.textContent;
+    downloadAllBtn.textContent = 'Preparando o zip...';
+    try{
+      await downloadSet(PHOTOS.map((_, i) => i), 'fotos-casamento.zip');
+    }catch(err){
+      alert('Não foi possível gerar o zip. Baixe as fotos uma a uma pelo álbum.');
+      console.error(err);
+    }finally{
+      downloadAllBtn.disabled = false;
+      downloadAllBtn.textContent = originalText;
+    }
+  });
+
+  function openLightbox(i){
+    currentIndex = i;
+    updateLightbox();
+    lightbox.classList.add('open');
+  }
+
+  function updateLightbox(){
+    const src = paths()[currentIndex];
+    lbImg.src = src;
+    lbDownload.href = src;
+    lbDownload.setAttribute('download', PHOTOS[currentIndex]);
+    updateLightboxSelectLabel();
+  }
+
+  function updateLightboxSelectLabel(){
+    lbSelect.textContent = selected.has(currentIndex) ? 'Selecionada ✓' : 'Selecionar';
+  }
+
+  lbSelect.addEventListener('click', () => toggleSelect(currentIndex));
+
+  function closeLightbox(){ lightbox.classList.remove('open'); }
+
+  lbClose.addEventListener('click', closeLightbox);
+  lightbox.addEventListener('click', (e) => { if(e.target === lightbox) closeLightbox(); });
+  lbPrev.addEventListener('click', () => { currentIndex = (currentIndex - 1 + PHOTOS.length) % PHOTOS.length; updateLightbox(); });
+  lbNext.addEventListener('click', () => { currentIndex = (currentIndex + 1) % PHOTOS.length; updateLightbox(); });
+
+  document.addEventListener('keydown', (e) => {
+    if(!lightbox.classList.contains('open')) return;
+    if(e.key === 'Escape') closeLightbox();
+    if(e.key === 'ArrowLeft') lbPrev.click();
+    if(e.key === 'ArrowRight') lbNext.click();
+  });
+
+  renderGallery();
+  updateSelectionUI();
+  carregarFotosDoGitHub();
+
+  document.getElementById('verFotosBtn').addEventListener('click', () => {
+    const section = document.getElementById('fotosSection');
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+</script>
+
+</body>
+</html>
